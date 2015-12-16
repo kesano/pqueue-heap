@@ -61,7 +61,7 @@ private:
 
     struct Node {
         double key;
-        std::string value;
+        ValueType value;
     };
 
 /* Constants */

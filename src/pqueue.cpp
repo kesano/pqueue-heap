@@ -5,8 +5,11 @@
  * underlying representation.
  */
 
+#ifdef _pqueue_h
+
 #include <iostream>
 #include <string>
+#include "console.h"
 #include "error.h"
 #include "pqueue.h"
 using namespace std;
@@ -18,7 +21,8 @@ using namespace std;
  * object.
  */
 
-PriorityQueue::PriorityQueue() {
+template <typename ValueType>
+PriorityQueue<ValueType>::PriorityQueue() {
     capacity = INITIAL_CAPACITY;
     array = new Node[capacity];
     count = 0;
@@ -31,19 +35,23 @@ PriorityQueue::PriorityQueue() {
  * which consists of the dynamic array.
  */
 
-PriorityQueue::~PriorityQueue() {
+template <typename ValueType>
+PriorityQueue<ValueType>::~PriorityQueue() {
     delete[] array;
 }
 
-int PriorityQueue::size() const {
+template <typename ValueType>
+int PriorityQueue<ValueType>::size() const {
     return count;
 }
 
-bool PriorityQueue::isEmpty() const {
+template <typename ValueType>
+bool PriorityQueue<ValueType>::isEmpty() const {
     return count == 0;
 }
 
-void PriorityQueue::clear() {
+template <typename ValueType>
+void PriorityQueue<ValueType>::clear() {
     count = 0;
 }
 
@@ -55,18 +63,16 @@ void PriorityQueue::clear() {
  * in its correct position, this implementation begins by inserting
  * the node as a new leaf in the next available leftmost position in
  * the tree. Once inserted, this method traverses through each level
- * of the tree. At any level the node's key is found to be less than
- * (higher in priority) or equal to that of its parent, the node is
- * swapped with its parent, so that the node becomes the parent and
- * the old parent takes the place the node previously occupied. Swapping
- * the node with its parent when its key value is the same as its parent
- * ensures that nodes with equal keys are ordered in the heap by the node
- * that has spent the longest time in the tree. This process repeats
- * until either the node's key is greater than its parent's key, or the
- * node is at the root.
+ * of the tree. At any level a node's key is found to be less than
+ * (higher in priority) its parent, that node is swapped with its parent,
+ * so the node becomes the parent and the old parent takes the place
+ * the node previously occupied. This process repeats until either the
+ * node's key is greater than or equal to its parent's key, or the node
+ * is at the root.
  */
 
-void PriorityQueue::enqueue(string value, double priority) {
+template <typename ValueType>
+void PriorityQueue<ValueType>::enqueue(ValueType value, double priority) {
     if (count == capacity) expandCapacity();
     Node t;
     t.key = priority;
@@ -75,7 +81,7 @@ void PriorityQueue::enqueue(string value, double priority) {
     if (!isEmpty()) {
         int i = count;
         int parentPos = (i - 1) / 2;
-        while (array[i].key <= array[parentPos].key) {
+        while (array[i].key < array[parentPos].key) {
             swapNodes(i, parentPos);
             i = parentPos;
             parentPos = (i - 1) / 2;
@@ -93,7 +99,8 @@ void PriorityQueue::enqueue(string value, double priority) {
  * until the ordering property is restored.
  */
 
-string PriorityQueue::dequeue() {
+template <typename ValueType>
+ValueType PriorityQueue<ValueType>::dequeue() {
     if (isEmpty()) error("dequeue: Attempting to dequeue an empty priority queue");
     Node result = array[0];
     if (--count >= 1) {
@@ -103,12 +110,14 @@ string PriorityQueue::dequeue() {
     return result.value;
 }
 
-string PriorityQueue::peek() const {
+template <typename ValueType>
+ValueType PriorityQueue<ValueType>::peek() const {
     if (isEmpty()) error("peek: Attempting to peek an empty priority queue");
     return array[0].value;
 }
 
-double PriorityQueue::peekPriority() const {
+template <typename ValueType>
+double PriorityQueue<ValueType>::peekPriority() const {
     if (isEmpty()) error("peekPriority: Attempting to peek an empty priority queue");
     return array[0].key;
 }
@@ -118,31 +127,26 @@ double PriorityQueue::peekPriority() const {
  * -------------------------------------
  * This helper method swaps the key that was moved into the root
  * position down the tree until the tree's ordering property is
- * restored. If the left and right children have the same key value
- * which is lower than the key traversing downward, that key is swapped
- * with the right child. This ensures that nodes with equal keys are
- * dequeued on a FIFO basis.
+ * restored.
  */
 
-void PriorityQueue::swapKeyDownward() {
+template <typename ValueType>
+void PriorityQueue<ValueType>::swapKeyDownward() {
     int i = 0;
     while (i < count - 1) {
         int leftChildPos = 2 * i + 1;
         int rightChildPos = 2 * i + 2;
-        if (leftChildPos < count && rightChildPos < count) {
-            if (array[leftChildPos].key < array[rightChildPos].key) {
-                if (array[leftChildPos].key < array[i].key) swapNodes(i, leftChildPos);
-                i = leftChildPos;
-            } else {
-                if (array[rightChildPos].key < array[i].key) swapNodes(i, rightChildPos);
-                i = rightChildPos;
-            }
+        int child;
+        if (leftChildPos >= count){
+            break;
+        } else if (rightChildPos >= count && leftChildPos < count) {
+            child = leftChildPos;
         } else {
-            if (leftChildPos < count && rightChildPos >= count) {
-                if (array[leftChildPos].key < array[i].key) swapNodes(i, leftChildPos);
-            }
-            i = leftChildPos;
+            child = (array[leftChildPos].key < array[rightChildPos].key)
+                         ? leftChildPos : rightChildPos;
         }
+        if (array[child].key <= array[i].key) swapNodes(i, child);
+        i = child;
     }
 }
 
@@ -156,7 +160,8 @@ void PriorityQueue::swapKeyDownward() {
  * position has been overwritten.
  */
 
-void PriorityQueue::swapNodes(int i, int j) {
+template <typename ValueType>
+void PriorityQueue<ValueType>::swapNodes(int i, int j) {
     Node tmp = array[j];
     array[j] = array[i];
     array[i] = tmp;
@@ -168,7 +173,8 @@ void PriorityQueue::swapNodes(int i, int j) {
  * Initializes the current object to be a deep copy of the argument.
  */
 
-PriorityQueue::PriorityQueue(const PriorityQueue & src) {
+template <typename ValueType>
+PriorityQueue<ValueType>::PriorityQueue(const PriorityQueue & src) {
    deepCopy(src);
 }
 
@@ -182,7 +188,8 @@ PriorityQueue::PriorityQueue(const PriorityQueue & src) {
  * array.
  */
 
-PriorityQueue & PriorityQueue::operator=(const PriorityQueue & src) {
+template <typename ValueType>
+PriorityQueue<ValueType> & PriorityQueue<ValueType>::operator=(const PriorityQueue & src) {
    if (this != &src) {
       if (array != NULL) delete[] array;
       deepCopy(src);
@@ -200,7 +207,8 @@ PriorityQueue & PriorityQueue::operator=(const PriorityQueue & src) {
  * memory associated with the old array as it is no longer in use.
  */
 
-void PriorityQueue::expandCapacity() {
+template <typename ValueType>
+void PriorityQueue<ValueType>::expandCapacity() {
     capacity *= 2;
     Node *oldArray = array;
     array = new Node[capacity];
@@ -218,7 +226,8 @@ void PriorityQueue::expandCapacity() {
  * dynamic array.
  */
 
-void PriorityQueue::deepCopy(const PriorityQueue & src) {
+template <typename ValueType>
+void PriorityQueue<ValueType>::deepCopy(const PriorityQueue & src) {
     count = src.count;
     capacity = src.capacity;
     if (capacity < INITIAL_CAPACITY) capacity = INITIAL_CAPACITY;
@@ -228,10 +237,4 @@ void PriorityQueue::deepCopy(const PriorityQueue & src) {
     }
 }
 
-
-
-
-
-
-
-
+#endif
